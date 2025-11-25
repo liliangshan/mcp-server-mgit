@@ -18,6 +18,7 @@ const REPO_NAME = process.env.REPO_NAME || '';
 const PROJECT_NAME = process.env.PROJECT_NAME || '';
 const MGIT_CMD = process.env.MGIT_CMD || 'mgit';
 const LANGUAGE = process.env.LANGUAGE || 'en'; // Default to English
+const CHECK_PUSH_HISTORY = process.env.CHECK_PUSH_HISTORY !== 'false'; // Default to true, only false when explicitly set to 'false'
 
 // Validate REPO_NAME is required
 if (!REPO_NAME || REPO_NAME.trim() === '') {
@@ -234,8 +235,8 @@ class FinalMCPServer {
       throw new Error('Missing message parameter');
     }
 
-    // Check if push history has been checked
-    if (!this.hasCheckedPushHistory) {
+    // Check if push history has been checked (only if CHECK_PUSH_HISTORY is enabled)
+    if (CHECK_PUSH_HISTORY && !this.hasCheckedPushHistory) {
       // Get the actual tool name (with prefix if REPO_NAME is set)
       const pushHistoryToolName = REPO_NAME ? `${REPO_NAME}_get_push_history` : 'get_push_history';
       const pushToolName = REPO_NAME ? `${REPO_NAME}_mgit_push` : 'mgit_push';
@@ -451,63 +452,70 @@ class FinalMCPServer {
             return baseDescription;
           };
           
-          result = {
-            tools: [
-              {
-                name: getToolName('mgit_push'),
-                description: getToolDescription(`Execute ${MGIT_CMD} push command for repository "${REPO_NAME}" with a commit message. 
+          // Build tools array dynamically based on CHECK_PUSH_HISTORY
+          const tools = [
+            {
+              name: getToolName('mgit_push'),
+              description: getToolDescription(`Execute ${MGIT_CMD} push command for repository "${REPO_NAME}" with a commit message. 
 
 IMPORTANT: 
-- You MUST call get_push_history tool FIRST to view the last 5 push records before using this tool
-- Confirm that the changes in this push have not been pushed before, otherwise modify the push message and push again
-- The repository name is configured via REPO_NAME environment variable
+${CHECK_PUSH_HISTORY ? '- You MUST call get_push_history tool FIRST to view the last 5 push records before using this tool\n- Confirm that the changes in this push have not been pushed before, otherwise modify the push message and push again\n' : ''}- The repository name is configured via REPO_NAME environment variable
 - Language setting: ${LANGUAGE} (default: en)
+${CHECK_PUSH_HISTORY ? '- Push history check is enabled (CHECK_PUSH_HISTORY=true). You must review push history before pushing.\n' : '- Push history check is disabled (CHECK_PUSH_HISTORY=false). You can push directly without checking history.\n'}
 
 USAGE: 
-1. First call get_push_history to view recent push records
-2. Then call this tool with the commit message parameter. Example:
+${CHECK_PUSH_HISTORY ? '1. First call get_push_history to view recent push records\n2. ' : ''}Then call this tool with the commit message parameter. Example:
 {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}
 
 Please provide the commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language.
 
 NOTE: If the push result contains a branch merge URL (such as a pull request URL), please output it to the user. If you can open a browser, you may also automatically open the URL.`),
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    message: {
-                      type: 'string',
-                      description: `Commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language. Example: {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}`
-                    }
-                  },
-                  required: ['message']
-                }
-              },
-              {
-                name: getToolName('get_push_history'),
-                description: getToolDescription(`Get the last 5 push history records for repository "${REPO_NAME}". This tool MUST be called before using mgit_push to ensure the current changes have not been pushed before. After calling this tool, you can proceed with mgit_push.`),
-                inputSchema: {
-                  type: 'object',
-                  properties: {}
-                }
-              },
-              {
-                name: getToolName('get_operation_logs'),
-                description: getToolDescription('Get operation logs'),
-                inputSchema: {
-                  type: 'object',
-                  properties: {
-                    limit: {
-                      type: 'number',
-                      description: 'Limit count, default 50'
-                    },
-                    offset: {
-                      type: 'number',
-                      description: 'Offset, default 0'
-                    }
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                    description: `Commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language. Example: {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}`
                   }
+                },
+                required: ['message']
+              }
+            }
+          ];
+
+          // Only include get_push_history tool if CHECK_PUSH_HISTORY is enabled
+          if (CHECK_PUSH_HISTORY) {
+            tools.push({
+              name: getToolName('get_push_history'),
+              description: getToolDescription(`Get the last 5 push history records for repository "${REPO_NAME}". This tool MUST be called before using mgit_push to ensure the current changes have not been pushed before. After calling this tool, you can proceed with mgit_push.`),
+              inputSchema: {
+                type: 'object',
+                properties: {}
+              }
+            });
+          }
+
+          // Add get_operation_logs tool
+          tools.push({
+            name: getToolName('get_operation_logs'),
+            description: getToolDescription('Get operation logs'),
+            inputSchema: {
+              type: 'object',
+              properties: {
+                limit: {
+                  type: 'number',
+                  description: 'Limit count, default 50'
+                },
+                offset: {
+                  type: 'number',
+                  description: 'Offset, default 0'
                 }
               }
-            ],
+            }
+          });
+
+          result = {
+            tools: tools,
             environment: {
               MGIT_CMD: MGIT_CMD,
               REPO_NAME: REPO_NAME || '',

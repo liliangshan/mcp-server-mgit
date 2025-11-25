@@ -69,6 +69,10 @@ export MGIT_CMD="mgit"
 # 支持的值：en（英语）、zh（中文）、zh-CN（简体中文）、zh-TW（繁体中文）
 export LANGUAGE="zh-CN"
 
+# 可选：启用/禁用推送历史检查（默认：true）
+# 设置为 false 可跳过历史检查要求
+export CHECK_PUSH_HISTORY="true"
+
 # 可选：项目标识
 export PROJECT_NAME="MyProject"
 ```
@@ -266,6 +270,7 @@ npm run dev
 | REPO_NAME | | **必需** 用于推送操作的仓库名称。使用 `mgit list`（或 `${MGIT_CMD} list`）查看可用的仓库名称。示例：`export REPO_NAME="my-repo"` |
 | MGIT_CMD | mgit | 可选的要执行的 mgit 命令（可以是完整路径） |
 | LANGUAGE | en | 可选的提交消息语言设置。支持的值：`en`（英语）、`zh` 或 `zh-CN`（简体中文）、`zh-TW`（繁体中文）。工具会提示用户以配置的语言提供提交消息。 |
+| CHECK_PUSH_HISTORY | true | 可选的标志，用于启用/禁用推送前检查推送历史。设置为 `false` 可跳过历史检查要求。当为 `true`（默认）时，在使用 `mgit_push` 之前必须调用 `get_push_history` 工具。当为 `false` 时，可以直接推送而无需检查历史。 **注意：** 如果遇到错误 `Encountered error in step execution: error executing cascade step: CORTEX_STEP_TYPE_MCP_TOOL: calling "tools/call": EOF`，请设置 `CHECK_PUSH_HISTORY="false"` 以禁用推送历史检查。 |
 | PROJECT_NAME | | 可选的工具描述项目标识 |
 | MCP_LOG_DIR | ./.setting（如果设置了 REPO_NAME，则为 ./.setting.<REPO_NAME>） | 日志目录 |
 | MCP_LOG_FILE | mcp-mgit.log | 日志文件名 |
@@ -307,6 +312,10 @@ export MGIT_CMD="mgit"
 # 可选：语言设置（默认：en）
 export LANGUAGE="zh-CN"
 
+# 可选：启用/禁用推送历史检查（默认：true）
+# 设置为 false 可跳过历史检查要求
+export CHECK_PUSH_HISTORY="true"
+
 # 可选：项目标识
 export PROJECT_NAME="MyProject"
 ```
@@ -343,6 +352,18 @@ mcp-server-mgit
 ```
 
 如果 `REPO_NAME="my-project"` 且 `MGIT_CMD="mgit"`，这将执行：`mgit push my-project "更新文档"`
+
+## 故障排除
+
+### 错误：`Encountered error in step execution: error executing cascade step: CORTEX_STEP_TYPE_MCP_TOOL: calling "tools/call": EOF`
+
+如果在尝试推送代码时遇到此错误，可能是由推送历史检查功能引起的。要解决此问题，请通过设置环境变量来禁用推送历史检查：
+
+```bash
+export CHECK_PUSH_HISTORY="false"
+```
+
+设置此变量后，重启 MCP 服务器并再次尝试推送。这将允许您直接推送，而无需先检查推送历史。
 
 ## 许可证
 

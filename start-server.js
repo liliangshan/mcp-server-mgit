@@ -89,6 +89,7 @@ function startServer() {
     REPO_NAME: process.env.REPO_NAME || '',
     PROJECT_NAME: process.env.PROJECT_NAME || '',
     LANGUAGE: process.env.LANGUAGE || 'en',
+    CHECK_PUSH_HISTORY: process.env.CHECK_PUSH_HISTORY !== undefined ? process.env.CHECK_PUSH_HISTORY : 'true',
     MCP_LOG_DIR: process.env.MCP_LOG_DIR || (process.env.REPO_NAME ? `./.setting.${process.env.REPO_NAME}` : './.setting'),
     MCP_LOG_FILE: process.env.MCP_LOG_FILE || 'mcp-mgit.log',
   };

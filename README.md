@@ -69,6 +69,10 @@ export MGIT_CMD="mgit"
 # Supported values: en (English), zh (Chinese), zh-CN (Simplified Chinese), zh-TW (Traditional Chinese)
 export LANGUAGE="en"
 
+# Optional: Enable/disable push history check (default: true)
+# Set to false to skip history check requirement
+export CHECK_PUSH_HISTORY="true"
+
 # Optional: Project branding
 export PROJECT_NAME="MyProject"
 ```
@@ -264,6 +268,7 @@ Logged content:
 | REPO_NAME | | **Required** repository name for push operations. Use `mgit list` (or `${MGIT_CMD} list`) to view available repository names. Example: `export REPO_NAME="my-repo"` |
 | MGIT_CMD | mgit | Optional mgit command to execute (can be full path) |
 | LANGUAGE | en | Optional language setting for commit messages. Supported values: `en` (English), `zh` or `zh-CN` (Simplified Chinese), `zh-TW` (Traditional Chinese). The tool will prompt users to provide commit messages in the configured language. |
+| CHECK_PUSH_HISTORY | true | Optional flag to enable/disable push history check before pushing. Set to `false` to skip the history check requirement. When `true` (default), you must call `get_push_history` tool before using `mgit_push`. When `false`, you can push directly without checking history. **Note:** If you encounter the error `Encountered error in step execution: error executing cascade step: CORTEX_STEP_TYPE_MCP_TOOL: calling "tools/call": EOF`, please set `CHECK_PUSH_HISTORY="false"` to disable push history check. |
 | PROJECT_NAME | | Optional project branding for tool descriptions |
 | MCP_LOG_DIR | ./.setting (or ./.setting.<REPO_NAME> if REPO_NAME is set) | Log directory |
 | MCP_LOG_FILE | mcp-mgit.log | Log filename |
@@ -305,6 +310,10 @@ export MGIT_CMD="mgit"
 # Optional: Language setting (default: en)
 export LANGUAGE="en"
 
+# Optional: Enable/disable push history check (default: true)
+# Set to false to skip history check requirement
+export CHECK_PUSH_HISTORY="true"
+
 # Optional: Project branding
 export PROJECT_NAME="MyProject"
 ```
@@ -341,6 +350,18 @@ The `mgit_push` tool executes the command: `${MGIT_CMD} push ${REPO_NAME} "<mess
 ```
 
 If `REPO_NAME="my-project"` and `MGIT_CMD="mgit"`, this will execute: `mgit push my-project "Update documentation"`
+
+## Troubleshooting
+
+### Error: `Encountered error in step execution: error executing cascade step: CORTEX_STEP_TYPE_MCP_TOOL: calling "tools/call": EOF`
+
+If you encounter this error when trying to push code, it may be caused by the push history check feature. To resolve this issue, disable the push history check by setting the environment variable:
+
+```bash
+export CHECK_PUSH_HISTORY="false"
+```
+
+After setting this variable, restart the MCP server and try pushing again. This will allow you to push directly without checking push history first.
 
 ## License
 
