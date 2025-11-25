@@ -9,6 +9,10 @@ const execAsync = promisify(exec);
 const operationLogs = [];
 const MAX_LOGS = 1000;
 
+// Push history storage
+const pushHistory = [];
+const MAX_PUSH_HISTORY = 100;
+
 // Get repository name and project name
 const REPO_NAME = process.env.REPO_NAME || '';
 const PROJECT_NAME = process.env.PROJECT_NAME || '';
@@ -34,10 +38,13 @@ const getLogConfig = () => {
   
   const logDir = process.env.MCP_LOG_DIR || defaultLogDir;
   const logFile = process.env.MCP_LOG_FILE || 'mcp-mgit.log';
+  const pushHistoryFile = process.env.MCP_PUSH_HISTORY_FILE || 'push-history.json';
   return {
     dir: logDir,
     file: logFile,
-    fullPath: path.join(logDir, logFile)
+    fullPath: path.join(logDir, logFile),
+    pushHistoryFile: pushHistoryFile,
+    pushHistoryFullPath: path.join(logDir, pushHistoryFile)
   };
 };
 
@@ -76,6 +83,55 @@ const logRequest = (method, params, result, error = null) => {
     console.error('Failed to write log file:', err.message);
   }
 };
+
+// Load push history from file
+const loadPushHistory = () => {
+  try {
+    const { pushHistoryFullPath } = getLogConfig();
+    if (fs.existsSync(pushHistoryFullPath)) {
+      const data = fs.readFileSync(pushHistoryFullPath, 'utf8');
+      const history = JSON.parse(data);
+      pushHistory.length = 0;
+      pushHistory.push(...history);
+    }
+  } catch (err) {
+    console.error('Failed to load push history:', err.message);
+  }
+};
+
+// Save push history to file
+const savePushHistory = () => {
+  try {
+    ensureLogDir();
+    const { pushHistoryFullPath } = getLogConfig();
+    fs.writeFileSync(pushHistoryFullPath, JSON.stringify(pushHistory, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to save push history:', err.message);
+  }
+};
+
+// Record push history
+const recordPushHistory = (message, result, error = null) => {
+  const pushEntry = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    repo_name: REPO_NAME,
+    message: message,
+    success: !error,
+    error: error ? error.toString() : null,
+    exit_code: result ? result.exitCode : null
+  };
+
+  pushHistory.unshift(pushEntry);
+  if (pushHistory.length > MAX_PUSH_HISTORY) {
+    pushHistory.splice(MAX_PUSH_HISTORY);
+  }
+
+  savePushHistory();
+};
+
+// Load push history on startup
+loadPushHistory();
 
 // Execute mgit push command
 const executeMgitPush = async (message) => {
@@ -167,6 +223,7 @@ class FinalMCPServer {
     this.name = 'mgit-mcp-server';
     this.version = '1.0.0';
     this.initialized = false;
+    this.hasCheckedPushHistory = false; // Track if push history has been checked
   }
 
   // Execute mgit push
@@ -177,11 +234,72 @@ class FinalMCPServer {
       throw new Error('Missing message parameter');
     }
 
+    // Check if push history has been checked
+    if (!this.hasCheckedPushHistory) {
+      // Get the actual tool name (with prefix if REPO_NAME is set)
+      const pushHistoryToolName = REPO_NAME ? `${REPO_NAME}_get_push_history` : 'get_push_history';
+      const pushToolName = REPO_NAME ? `${REPO_NAME}_mgit_push` : 'mgit_push';
+      
+      // Return JSON-RPC 2.0 compliant result with multiple prompt messages
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '⚠️ ERROR: Push history check is required before pushing code.'
+          },
+          {
+            type: 'text',
+            text: `🔧 REQUIRED ACTION: You must call the "${pushHistoryToolName}" tool first to view recent push records.`
+          },
+          {
+            type: 'text',
+            text: `📋 TOOL NAME: "${pushHistoryToolName}" - Use this tool to get the last 5 push history records.`
+          },
+          {
+            type: 'text',
+            text: `📝 TOOL CALL EXAMPLE: Call tools/call with name="${pushHistoryToolName}" and empty arguments: {"name": "${pushHistoryToolName}", "arguments": {}}`
+          },
+          {
+            type: 'text',
+            text: '🔍 STEP 1: Call get_push_history tool to view the last 5 push records for this repository.'
+          },
+          {
+            type: 'text',
+            text: '📊 STEP 2: Review the push history records to see what has been pushed recently.'
+          },
+          {
+            type: 'text',
+            text: '✅ STEP 3: Confirm that the changes you want to push have NOT been pushed before by comparing with the history.'
+          },
+          {
+            type: 'text',
+            text: '🔄 STEP 4: If the changes have already been pushed, modify the commit message to reflect new changes, then try again.'
+          },
+          {
+            type: 'text',
+            text: `🚀 STEP 5: After reviewing and confirming, you can then call "${pushToolName}" tool to proceed with the push.`
+          },
+          {
+            type: 'text',
+            text: `⚠️ IMPORTANT: The "${pushHistoryToolName}" tool must be called before "${pushToolName}" tool, otherwise the push will be rejected.`
+          }
+        ],
+        isError: true,
+        errorCode: 'PUSH_HISTORY_CHECK_REQUIRED'
+      };
+    }
+
     try {
       const result = await executeMgitPush(message);
       
       // Log operation
       logRequest('mgit_push', { repo_name: REPO_NAME, message }, result);
+
+      // Record push history
+      recordPushHistory(message, result, null);
+
+      // Reset the flag after successful push
+      this.hasCheckedPushHistory = false;
 
       return {
         success: true,
@@ -195,8 +313,31 @@ class FinalMCPServer {
       // Log operation error
       logRequest('mgit_push', { repo_name: REPO_NAME, message }, null, err.error || err.message);
       
+      // Record push history even on error
+      recordPushHistory(message, null, err.error || err.message);
+
+      // Reset the flag after error
+      this.hasCheckedPushHistory = false;
+      
       throw new Error(`MGit push failed: ${err.error || err.message}`);
     }
+  }
+
+  // Get push history (last 5 records)
+  async get_push_history(params) {
+    // Mark that push history has been checked
+    this.hasCheckedPushHistory = true;
+
+    // Return last 5 push records
+    const last5Records = pushHistory.slice(0, 5);
+
+    return {
+      total: pushHistory.length,
+      records: last5Records,
+      message: last5Records.length > 0 
+        ? `Found ${last5Records.length} recent push record(s). Please review them to ensure your current changes have not been pushed before. After reviewing, you can proceed with mgit_push.`
+        : 'No push history found. This appears to be the first push. You can now proceed with mgit_push.'
+    };
   }
 
   // Get operation logs
@@ -317,11 +458,14 @@ class FinalMCPServer {
                 description: getToolDescription(`Execute ${MGIT_CMD} push command for repository "${REPO_NAME}" with a commit message. 
 
 IMPORTANT: 
-- You must use this tool to push to repositories
+- You MUST call get_push_history tool FIRST to view the last 5 push records before using this tool
+- Confirm that the changes in this push have not been pushed before, otherwise modify the push message and push again
 - The repository name is configured via REPO_NAME environment variable
 - Language setting: ${LANGUAGE} (default: en)
 
-USAGE: You only need to pass the commit message parameter. Example:
+USAGE: 
+1. First call get_push_history to view recent push records
+2. Then call this tool with the commit message parameter. Example:
 {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}
 
 Please provide the commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language.
@@ -336,6 +480,14 @@ NOTE: If the push result contains a branch merge URL (such as a pull request URL
                     }
                   },
                   required: ['message']
+                }
+              },
+              {
+                name: getToolName('get_push_history'),
+                description: getToolDescription(`Get the last 5 push history records for repository "${REPO_NAME}". This tool MUST be called before using mgit_push to ensure the current changes have not been pushed before. After calling this tool, you can proceed with mgit_push.`),
+                inputSchema: {
+                  type: 'object',
+                  properties: {}
                 }
               },
               {
@@ -450,17 +602,22 @@ NOTE: If the push result contains a branch merge URL (such as a pull request URL
             throw new Error(`Unknown tool: ${name}`);
           }
 
-          result = await this[actualMethodName](args || {});
+          const toolResult = await this[actualMethodName](args || {});
 
-          // Tool call results need to be wrapped in content
-          result = {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(result, null, 2)
-              }
-            ]
-          };
+          // Check if result is already in content format (for special cases like push history check)
+          if (toolResult && toolResult.content && Array.isArray(toolResult.content)) {
+            result = toolResult;
+          } else {
+            // Tool call results need to be wrapped in content
+            result = {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(toolResult, null, 2)
+                }
+              ]
+            };
+          }
         } else if (method === 'ping') {
           logRequest('ping', {}, { status: 'pong' }, null);
           result = { pong: true };
