@@ -13,6 +13,7 @@ const MAX_LOGS = 1000;
 const REPO_NAME = process.env.REPO_NAME || '';
 const PROJECT_NAME = process.env.PROJECT_NAME || '';
 const MGIT_CMD = process.env.MGIT_CMD || 'mgit';
+const LANGUAGE = process.env.LANGUAGE || 'en'; // Default to English
 
 // Validate REPO_NAME is required
 if (!REPO_NAME || REPO_NAME.trim() === '') {
@@ -148,6 +149,7 @@ console.error('=== MCP MGit Server Starting ===');
 console.error(`Time: ${new Date().toISOString()}`);
 console.error(`MGit Command: ${MGIT_CMD}`);
 console.error(`Repository Name: ${REPO_NAME}`);
+console.error(`Language: ${LANGUAGE}`);
 if (PROJECT_NAME) {
   console.error(`Project Name: ${PROJECT_NAME}`);
 }
@@ -312,13 +314,23 @@ class FinalMCPServer {
             tools: [
               {
                 name: getToolName('mgit_push'),
-                description: getToolDescription(`Execute ${MGIT_CMD} push command for repository "${REPO_NAME}" with a commit message. IMPORTANT: You must use this tool to push to repositories. The repository name is configured via REPO_NAME environment variable.`),
+                description: getToolDescription(`Execute ${MGIT_CMD} push command for repository "${REPO_NAME}" with a commit message. 
+
+IMPORTANT: 
+- You must use this tool to push to repositories
+- The repository name is configured via REPO_NAME environment variable
+- Language setting: ${LANGUAGE} (default: en)
+
+USAGE: You only need to pass the commit message parameter. Example:
+{message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}
+
+Please provide the commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language.`),
                 inputSchema: {
                   type: 'object',
                   properties: {
                     message: {
                       type: 'string',
-                      description: 'Commit message for the push operation'
+                      description: `Commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language. Example: {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}`
                     }
                   },
                   required: ['message']
@@ -346,6 +358,7 @@ class FinalMCPServer {
               MGIT_CMD: MGIT_CMD,
               REPO_NAME: REPO_NAME || '',
               PROJECT_NAME: PROJECT_NAME || '',
+              LANGUAGE: LANGUAGE,
               serverInfo: {
                 name: this.name,
                 version: this.version

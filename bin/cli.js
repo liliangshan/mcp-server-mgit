@@ -87,6 +87,7 @@ function startServer() {
     MGIT_CMD: process.env.MGIT_CMD || 'mgit',
     REPO_NAME: process.env.REPO_NAME || '',
     PROJECT_NAME: process.env.PROJECT_NAME || '',
+    LANGUAGE: process.env.LANGUAGE || 'en',
     MCP_LOG_DIR: process.env.MCP_LOG_DIR || (process.env.REPO_NAME ? `./.setting.${process.env.REPO_NAME}` : './.setting'),
     MCP_LOG_FILE: process.env.MCP_LOG_FILE || 'mcp-mgit.log',
   };
@@ -95,6 +96,7 @@ function startServer() {
     MGIT_CMD: env.MGIT_CMD,
     REPO_NAME: env.REPO_NAME,
     PROJECT_NAME: env.PROJECT_NAME || '(not set)',
+    LANGUAGE: env.LANGUAGE,
     MCP_LOG_DIR: env.MCP_LOG_DIR,
     MCP_LOG_FILE: env.MCP_LOG_FILE
   });

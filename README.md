@@ -40,6 +40,10 @@ export REPO_NAME="my-repo"
 # Optional: MGit command (default: mgit)
 export MGIT_CMD="mgit"
 
+# Optional: Language setting (default: en)
+# Supported values: en (English), zh (Chinese), zh-CN (Simplified Chinese), zh-TW (Traditional Chinese)
+export LANGUAGE="en"
+
 # Optional: Project branding
 export PROJECT_NAME="MyProject"
 ```
@@ -92,6 +96,7 @@ npm run dev
       "env": {
         "REPO_NAME": "my-repo",
         "MGIT_CMD": "mgit",
+        "LANGUAGE": "en",
         "PROJECT_NAME": "MyProject"
       }
     }
@@ -113,6 +118,7 @@ npm run dev
       "env": {
         "REPO_NAME": "my-repo",
         "MGIT_CMD": "mgit",
+        "LANGUAGE": "en",
         "PROJECT_NAME": "MyProject"
       }
     }
@@ -232,6 +238,7 @@ Logged content:
 |----------|---------|-------------|
 | REPO_NAME | | **Required** repository name for push operations. Use `mgit list` (or `${MGIT_CMD} list`) to view available repository names. Example: `export REPO_NAME="my-repo"` |
 | MGIT_CMD | mgit | Optional mgit command to execute (can be full path) |
+| LANGUAGE | en | Optional language setting for commit messages. Supported values: `en` (English), `zh` or `zh-CN` (Simplified Chinese), `zh-TW` (Traditional Chinese). The tool will prompt users to provide commit messages in the configured language. |
 | PROJECT_NAME | | Optional project branding for tool descriptions |
 | MCP_LOG_DIR | ./.setting (or ./.setting.<REPO_NAME> if REPO_NAME is set) | Log directory |
 | MCP_LOG_FILE | mcp-mgit.log | Log filename |
@@ -269,6 +276,9 @@ export REPO_NAME="my-repo"
 
 # Optional: MGit command (default: mgit)
 export MGIT_CMD="mgit"
+
+# Optional: Language setting (default: en)
+export LANGUAGE="en"
 
 # Optional: Project branding
 export PROJECT_NAME="MyProject"
