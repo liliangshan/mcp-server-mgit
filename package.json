@@ -1,6 +1,6 @@
 {
   "name": "@liangshanli/mcp-server-mgit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for mgit push operations with multiple instance support",
   "main": "bin/cli.js",
   "bin": {

@@ -1,0 +1,13 @@
+# npm
+.npmrc
+node_modules/
+npm-debug.log*
+
+# Logs
+.setting/
+.setting.*/
+
+# OS
+.DS_Store
+Thumbs.db
+

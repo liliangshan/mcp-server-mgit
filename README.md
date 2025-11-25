@@ -2,6 +2,31 @@
 
 A MCP server for executing `mgit push` operations with multiple instance support.
 
+## Prerequisites
+
+**⚠️ Important:** This MCP server requires the [MGit](https://github.com/liliangshan/mgit) tool to be installed and configured on your system.
+
+MGit is a command-line tool for managing multiple Git projects. It helps you efficiently manage, synchronize, and update multiple Git repositories.
+
+### MGit Installation and Setup
+
+Before using this MCP server, please:
+
+1. **Install MGit**: Download and install MGit from [https://github.com/liliangshan/mgit/releases](https://github.com/liliangshan/mgit/releases)
+2. **Initialize MGit**: Follow the MGit setup instructions in the [MGit README](https://github.com/liliangshan/mgit/blob/main/README.md)
+3. **Configure Projects**: Use `mgit init` to add your Git repositories to MGit
+4. **Verify Setup**: Use `mgit list` to view available repository names
+
+For detailed MGit usage instructions, features, and configuration, please refer to the [MGit README](https://github.com/liliangshan/mgit/blob/main/README.md).
+
+### Key MGit Features
+
+- Multi-project Management: Manage multiple Git projects with one click
+- Multi-language Support: Supports multiple languages including Chinese (Simplified/Traditional), English, Japanese, Korean, French
+- Remote Database Sync: Supports project configuration synchronization across multiple devices
+- Smart Branch Management: Automatically detects and switches branches to avoid conflicts
+- Batch Operations: Supports pulling/pushing changes for multiple projects simultaneously
+
 ## Features
 
 - ✅ Execute `mgit push` command for repositories

@@ -324,7 +324,9 @@ IMPORTANT:
 USAGE: You only need to pass the commit message parameter. Example:
 {message: "${LANGUAGE === 'en' ? 'Update project files' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? '更新项目文件' : LANGUAGE === 'zh-TW' ? '更新專案檔案' : 'Update project files'}"}
 
-Please provide the commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language.`),
+Please provide the commit message in ${LANGUAGE === 'en' ? 'English' : LANGUAGE === 'zh' || LANGUAGE === 'zh-CN' ? 'Chinese' : LANGUAGE === 'zh-TW' ? 'Traditional Chinese' : LANGUAGE} language.
+
+NOTE: If the push result contains a branch merge URL (such as a pull request URL), please output it to the user. If you can open a browser, you may also automatically open the URL.`),
                 inputSchema: {
                   type: 'object',
                   properties: {
