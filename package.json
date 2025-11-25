@@ -1,0 +1,35 @@
+{
+  "name": "@liangshanli/mcp-server-mgit",
+  "version": "1.0.0",
+  "description": "MCP server for mgit push operations with multiple instance support",
+  "main": "bin/cli.js",
+  "bin": {
+    "mcp-server-mgit": "bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "dev": "node --inspect bin/cli.js",
+    "test": "node test-simple.js",
+    "start-managed": "node start-server.js",
+    "daemon": "node start-server.js",
+    "server": "node src/server-final.js"
+  },
+  "keywords": [
+    "mcp",
+    "mgit",
+    "git",
+    "server",
+    "push"
+  ],
+  "author": "liliangshan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liliangshan/mcp-server-mgit.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
+
