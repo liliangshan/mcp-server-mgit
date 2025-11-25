@@ -80,13 +80,22 @@ const logRequest = (method, params, result, error = null) => {
 const executeMgitPush = async (message) => {
   return new Promise((resolve, reject) => {
     const command = MGIT_CMD;
-    const args = ['push', REPO_NAME, message];
+    // Clean the message: remove or escape problematic characters
+    // Remove double quotes from the message to avoid argument parsing issues
+    // Replace double quotes with single quotes or remove them
+    const cleanedMessage = message.replace(/"/g, "'");
     
-    console.error(`Executing: ${command} ${args.join(' ')}`);
+    // When using spawn with array args, we don't need quotes
+    // The message will be passed as a single argument even if it contains spaces
+    const args = ['push', REPO_NAME, cleanedMessage];
     
+    console.error(`Executing: ${command} ${args.map(arg => arg.includes(' ') ? `"${arg}"` : arg).join(' ')}`);
+    
+    // Use shell: false to pass arguments directly without shell interpretation
+    // This ensures the message is passed as a single argument even with spaces
     const child = spawn(command, args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      shell: process.platform === 'win32'
+      shell: false
     });
 
     let stdout = '';
